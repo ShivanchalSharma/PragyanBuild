@@ -8,47 +8,25 @@ interface BlogPost {
   image: string | null;
 }
 
-
-const CORS_PROXY = "https://corsproxy.io/?";
 const FEED_URL = "https://edciitdelhi.substack.com/feed";
+const RSS2JSON = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(FEED_URL)}`;
 
 export function LatestBlogs() {
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-  fetch(`${CORS_PROXY}${encodeURIComponent(FEED_URL)}`)
-  .then((res) => res.text())
-  .then((contents) => {
-    const parser = new DOMParser();
-    const xml = parser.parseFromString(contents, "text/xml");
-        const items = Array.from(xml.querySelectorAll("item")).slice(0, 4);
-
-        const parsed: BlogPost[] = items.map((item) => {
-          // try to get thumbnail from media:content or enclosure
-          const media =
-            item.querySelector("enclosure")?.getAttribute("url") ||
-            item.getElementsByTagNameNS("*", "content")[0]?.getAttribute("url") ||
-            null;
-
-          // fallback: extract first <img> from content:encoded
-          let image = media;
-          if (!image) {
-            const encoded = item.getElementsByTagNameNS("*", "encoded")[0]?.textContent || "";
-            const match = encoded.match(/<img[^>]+src="([^">]+)"/);
-            image = match ? match[1] : null;
-          }
-
-          return {
-            title: item.querySelector("title")?.textContent || "",
-            link: item.querySelector("link")?.textContent || "#",
-            date: new Date(item.querySelector("pubDate")?.textContent || "").toLocaleDateString("en-IN", {
-              day: "numeric", month: "short", year: "numeric",
-            }),
-            image,
-          };
-        });
-
+    fetch(RSS2JSON)
+      .then((res) => res.json())
+      .then((data) => {
+        const parsed: BlogPost[] = data.items.slice(0, 4).map((item: any) => ({
+          title: item.title,
+          link: item.link,
+          date: new Date(item.pubDate).toLocaleDateString("en-IN", {
+            day: "numeric", month: "short", year: "numeric",
+          }),
+          image: item.thumbnail || item.enclosure?.link || null,
+        }));
         setPosts(parsed);
       })
       .catch(console.error)
@@ -58,9 +36,11 @@ export function LatestBlogs() {
   return (
     <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="flex items-center justify-between mb-8">
-        <h2 className="text-sm font-bold tracking-widest text-foreground uppercase">Latest from eDC</h2>
-        
-        <a  href="https://edciitdelhi.substack.com"
+        <h2 className="text-sm font-bold tracking-widest text-foreground uppercase">
+          Latest from eDC
+        </h2>
+        <a
+          href="https://edciitdelhi.substack.com"
           target="_blank"
           rel="noopener noreferrer"
           className="flex items-center gap-1 text-xs font-semibold text-accent hover:opacity-80 transition-opacity uppercase tracking-wider"
@@ -74,6 +54,10 @@ export function LatestBlogs() {
           {[...Array(4)].map((_, i) => (
             <div key={i} className="rounded-xl bg-card border border-border animate-pulse h-56" />
           ))}
+        </div>
+      ) : posts.length === 0 ? (
+        <div className="text-center py-10 text-muted-foreground text-sm">
+          No posts found.
         </div>
       ) : (
         <div className="grid sm:grid-cols-2 md:grid-cols-4 gap-4">
