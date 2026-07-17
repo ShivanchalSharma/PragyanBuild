@@ -3,26 +3,26 @@ import { AppShell } from "@/components/edc/AppShell";
 import { useUser, usePrefs, useSaved } from "@/lib/edc/store";
 import { whatsNew, pickedForYou, books, courses, reports, funders, mentors, competitions } from "@/lib/edc/data";
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles, RotateCcw, Bookmark, ExternalLink, Bot, User } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Send, Sparkles, RotateCcw, Bookmark, ExternalLink, Bot, Map, FileText, type LucideIcon } from "lucide-react";
 import type { Resource } from "@/lib/edc/data";
 
 export const Route = createFileRoute("/ai")({
-  head: () => ({ meta: [{ title: "AI Recommender — eDC KnowledgeHub" }] }),
-  component: AIRecommender,
+  head: () => ({ meta: [{ title: "AI Advisor — eDC KnowledgeHub" }] }),
+  component: AIAdvisor,
 });
+
+// ⚠️ Demo-only: calls Anthropic directly from the browser, which exposes the
+// API key client-side. Fine for a hackathon; proxy through a serverless
+// function before shipping to real users. Requires VITE_ANTHROPIC_API_KEY in
+// a .env file at the project root.
+const CLAUDE_MODEL = "claude-sonnet-4-20250514";
 
 // ── All resources Claude can reference ──────────────────────────────────────
 const ALL_RESOURCES: Resource[] = [...whatsNew, ...pickedForYou];
 
 const RESOURCE_CATALOGUE = ALL_RESOURCES.map(r => ({
-  id: r.id,
-  title: r.title,
-  description: r.description,
-  category: r.category,
-  tags: r.tags,
-  deadlineDays: r.deadlineDays,
-  emoji: r.emoji,
+  id: r.id, title: r.title, description: r.description, category: r.category,
+  tags: r.tags, deadlineDays: r.deadlineDays, emoji: r.emoji,
 }));
 
 const EXTRA_CATALOGUE = [
@@ -34,26 +34,12 @@ const EXTRA_CATALOGUE = [
 ];
 
 // ── Types ────────────────────────────────────────────────────────────────────
-interface RecommendedResource {
-  id: string;
-  title: string;
-  emoji: string;
-  category: string;
-  reason: string;
-  tags?: string[];
-  deadlineDays?: number;
-  type?: string;
-  amount?: string;
-  prize?: string;
-  author?: string;
+interface CardItem {
+  id: string; title: string; emoji: string; category: string; reason: string;
+  tags?: string[]; deadlineDays?: number; type?: string; amount?: string; prize?: string; author?: string;
 }
-
-interface Message {
-  role: "user" | "assistant";
-  text: string;
-  recommendations?: RecommendedResource[];
-  loading?: boolean;
-}
+interface Message { role: "user" | "assistant"; text: string; cards?: CardItem[]; loading?: boolean }
+interface ChatState { messages: Message[]; history: { role: "user" | "assistant"; content: string }[] }
 
 const catColor: Record<string, string> = {
   FUNDING: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
@@ -69,38 +55,39 @@ const catColor: Record<string, string> = {
   competition: "bg-red-500/15 text-red-300 border-red-500/30",
 };
 
-const SUGGESTIONS = [
-  "I'm building a deeptech startup in robotics at IIT Delhi",
-  "Early stage fintech idea, looking for funding and mentors",
-  "I want to validate my climate tech idea and find grants",
-  "SaaS product for college students, need to learn and raise",
-];
+// ── Modes: General Advisor / AI Roadmap / Pitch Deck Reviewer ───────────────
+type ModeId = "general" | "roadmap" | "pitch";
 
-// ── Component ────────────────────────────────────────────────────────────────
-function AIRecommender() {
-  const { user } = useUser();
-  const { prefs } = usePrefs();
-  const { saved, toggle } = useSaved();
-  const navigate = useNavigate();
+interface Mode {
+  id: ModeId;
+  label: string;
+  Icon: LucideIcon;
+  tagline: string;
+  emptyTitle: string;
+  emptyDesc: string;
+  suggestions: string[];
+  cardsHeading: string;
+  linkToResources: boolean; // only "general" cards map to real, saveable resources
+  systemPrompt: (user: ReturnType<typeof useUser>["user"], prefs: ReturnType<typeof usePrefs>["prefs"]) => string;
+}
 
-  const [hydrated, setHydrated] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [history, setHistory] = useState<{ role: "user" | "assistant"; content: string }[]>([]);
-  const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => setHydrated(true), []);
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  if (!hydrated) return null;
-  if (!user) return <Navigate to="/" />;
-
-  const systemPrompt = `You are an AI resource advisor for eDC KnowledgeHub — the entrepreneurship platform for IIT Delhi students.
+const MODES: Mode[] = [
+  {
+    id: "general",
+    label: "General Advisor",
+    Icon: Sparkles,
+    tagline: "Powered by Claude",
+    emptyTitle: "What are you building?",
+    emptyDesc: "Describe your startup idea or what you need help with — I'll find the most relevant resources for you.",
+    suggestions: [
+      "I'm building a deeptech startup in robotics at IIT Delhi",
+      "Early stage fintech idea, looking for funding and mentors",
+      "I want to validate my climate tech idea and find grants",
+      "SaaS product for college students, need to learn and raise",
+    ],
+    cardsHeading: "Recommended for you",
+    linkToResources: true,
+    systemPrompt: (user, prefs) => `You are an AI resource advisor for eDC KnowledgeHub — the entrepreneurship platform for IIT Delhi students.
 
 User profile:
 - Name: ${user?.name || "Founder"}
@@ -122,74 +109,184 @@ INSTRUCTIONS:
 3. Always respond in this exact JSON format:
 {
   "message": "Your conversational reply here...",
-  "recommendations": [
-    {
-      "id": "resource_id",
-      "title": "Resource title",
-      "emoji": "emoji",
-      "category": "CATEGORY or type",
-      "reason": "One sentence why this fits their specific situation",
-      "tags": ["tag1"],
-      "deadlineDays": 12,
-      "type": "funder/book/etc if from extended catalogue",
-      "amount": "if funder",
-      "prize": "if competition",
-      "author": "if book"
-    }
+  "cards": [
+    { "id": "resource_id", "title": "Resource title", "emoji": "emoji", "category": "CATEGORY or type",
+      "reason": "One sentence why this fits their specific situation", "tags": ["tag1"],
+      "deadlineDays": 12, "type": "funder/book/etc if from extended catalogue",
+      "amount": "if funder", "prize": "if competition", "author": "if book" }
   ]
 }
-4. If you need more info before recommending, set "recommendations" to an empty array [].
+4. If you need more info before recommending, set "cards" to an empty array [].
 5. Keep "reason" specific to THEIR idea, not generic.
 6. Prioritise IITD-exclusive resources when relevant.
-7. Always respond ONLY with the JSON — no preamble, no markdown fences.`;
+7. Respond ONLY with the JSON — no preamble, no markdown fences.`,
+  },
+  {
+    id: "roadmap",
+    label: "AI Roadmap",
+    Icon: Map,
+    tagline: "Turns your idea into a week-by-week plan",
+    emptyTitle: "Where are you starting from?",
+    emptyDesc: "Tell me about your idea and current stage — I'll turn it into a concrete, week-by-week roadmap.",
+    suggestions: [
+      "I have an idea for an EV charging startup — give me a roadmap",
+      "Validate-stage SaaS idea, what should I do this month?",
+      "I'm about to launch — what are my next 4 weeks?",
+      "Turn my fintech idea into a week-by-week plan",
+    ],
+    cardsHeading: "Your roadmap",
+    linkToResources: false,
+    systemPrompt: (user, prefs) => `You are an AI startup roadmap generator for eDC KnowledgeHub, built for IIT Delhi student founders.
+
+User profile:
+- Name: ${user?.name || "Founder"}
+- Stage: ${prefs?.stage || "unknown"}
+- Domains: ${prefs?.domains?.join(", ") || "not set"}
+
+INSTRUCTIONS:
+1. Have a brief conversation (1-2 messages max) to understand their idea, stage, and constraints.
+2. Once you have enough context, generate a concrete 4-6 week roadmap with one clear, actionable step per week.
+3. Respond in this exact JSON format:
+{
+  "message": "A short conversational reply or summary of the roadmap.",
+  "cards": [
+    { "id": "week-1", "title": "Short step title", "emoji": "🔍", "category": "Week 1",
+      "reason": "1-2 sentences on exactly what to do and why it matters now." }
+  ]
+}
+4. If you need more info before generating a roadmap, set "cards" to an empty array [].
+5. Steps must be specific, ordered chronologically, and realistic for a student founder.
+6. Respond ONLY with the JSON — no preamble, no markdown fences.`,
+  },
+  {
+    id: "pitch",
+    label: "Pitch Deck Reviewer",
+    Icon: FileText,
+    tagline: "Investor-grade feedback on your deck",
+    emptyTitle: "Paste your pitch deck outline",
+    emptyDesc: "Describe or paste your deck slide-by-slide (Problem, Solution, Market, Traction, Team, Ask) — I'll score it and tell you what's missing.",
+    suggestions: [
+      "Review my 10-slide pitch deck for a climate-tech startup",
+      "I'll paste my deck outline — please score it",
+      "Help me improve my problem and market slides",
+      "What's missing from my seed-stage pitch?",
+    ],
+    cardsHeading: "Slide-by-slide feedback",
+    linkToResources: false,
+    systemPrompt: (user, prefs) => `You are an AI pitch deck reviewer for eDC KnowledgeHub, giving investor-grade feedback to IIT Delhi student founders.
+
+User profile:
+- Name: ${user?.name || "Founder"}
+- Stage: ${prefs?.stage || "unknown"}
+
+INSTRUCTIONS:
+1. If the user hasn't described their deck yet, ask them to outline it slide-by-slide (Problem, Solution, Market, Traction, Team, The Ask).
+2. Once they've given enough detail, score each key section out of 10 and give specific, actionable feedback — like a real investor would.
+3. Respond in this exact JSON format:
+{
+  "message": "Overall verdict — mention an overall score out of 100 and the single biggest thing to fix first.",
+  "cards": [
+    { "id": "problem", "title": "Problem", "emoji": "🎯", "category": "Score: 7/10",
+      "reason": "Specific, actionable feedback on this section." }
+  ]
+}
+4. If you don't have enough detail yet, set "cards" to an empty array [].
+5. Be honest and specific — vague praise helps no one preparing to raise money.
+6. Respond ONLY with the JSON — no preamble, no markdown fences.`,
+  },
+];
+
+// ── Component ────────────────────────────────────────────────────────────────
+function AIAdvisor() {
+  const { user } = useUser();
+  const { prefs } = usePrefs();
+  const { saved, toggle } = useSaved();
+  const navigate = useNavigate();
+
+  const [hydrated, setHydrated] = useState(false);
+  const [activeMode, setActiveMode] = useState<ModeId>("general");
+  const [chats, setChats] = useState<Record<ModeId, ChatState>>({
+    general: { messages: [], history: [] },
+    roadmap: { messages: [], history: [] },
+    pitch: { messages: [], history: [] },
+  });
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => setHydrated(true), []);
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [chats, activeMode]);
+
+  if (!hydrated) return null;
+  if (!user) return <Navigate to="/" />;
+
+  const mode = MODES.find(m => m.id === activeMode)!;
+  const chat = chats[activeMode];
+  const isEmpty = chat.messages.length === 0;
+
+  function setChat(id: ModeId, next: ChatState) {
+    setChats(prev => ({ ...prev, [id]: next }));
+  }
 
   async function send(text: string) {
     if (!text.trim() || loading) return;
     setInput("");
     setLoading(true);
 
+    const current = chats[activeMode];
     const userMsg: Message = { role: "user", text };
     const loadingMsg: Message = { role: "assistant", text: "", loading: true };
-    setMessages(prev => [...prev, userMsg, loadingMsg]);
-
-    const newHistory = [...history, { role: "user" as const, content: text }];
+    const nextMessages = [...current.messages, userMsg, loadingMsg];
+    const nextHistory = [...current.history, { role: "user" as const, content: text }];
+    setChat(activeMode, { messages: nextMessages, history: nextHistory });
 
     try {
+      const key = import.meta.env.VITE_ANTHROPIC_API_KEY;
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+          "anthropic-dangerous-direct-browser-access": "true",
+        },
         body: JSON.stringify({
-          model: "claude-sonnet-4-20250514",
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: newHistory,
+          model: CLAUDE_MODEL,
+          max_tokens: 1200,
+          system: mode.systemPrompt(user, prefs),
+          messages: nextHistory,
         }),
       });
 
       const data = await res.json();
       const raw = data.content?.map((b: { type: string; text?: string }) => b.type === "text" ? b.text : "").join("") || "";
 
-      let parsed: { message: string; recommendations: RecommendedResource[] } = { message: raw, recommendations: [] };
+      let parsed: { message: string; cards: CardItem[] } = { message: raw, cards: [] };
       try {
         const clean = raw.replace(/```json|```/g, "").trim();
         parsed = JSON.parse(clean);
       } catch {
-        parsed = { message: raw, recommendations: [] };
+        parsed = { message: raw || "Something went wrong reading that response. Please try again.", cards: [] };
       }
 
       const assistantMsg: Message = {
         role: "assistant",
         text: parsed.message,
-        recommendations: parsed.recommendations?.length ? parsed.recommendations : undefined,
+        cards: parsed.cards?.length ? parsed.cards : undefined,
       };
 
-      setMessages(prev => [...prev.slice(0, -1), assistantMsg]);
-      setHistory([...newHistory, { role: "assistant", content: raw }]);
-    } catch (err) {
-      setMessages(prev => [
-        ...prev.slice(0, -1),
-        { role: "assistant", text: "Something went wrong. Please try again." },
-      ]);
+      setChat(activeMode, {
+        messages: [...nextMessages.slice(0, -1), assistantMsg],
+        history: [...nextHistory, { role: "assistant", content: raw }],
+      });
+    } catch {
+      setChat(activeMode, {
+        messages: [...nextMessages.slice(0, -1), { role: "assistant", text: "Something went wrong. Please try again." }],
+        history: nextHistory,
+      });
     } finally {
       setLoading(false);
       inputRef.current?.focus();
@@ -197,26 +294,23 @@ INSTRUCTIONS:
   }
 
   function reset() {
-    setMessages([]);
-    setHistory([]);
+    setChat(activeMode, { messages: [], history: [] });
     setInput("");
   }
-
-  const isEmpty = messages.length === 0;
 
   return (
     <AppShell>
       <div className="max-w-3xl mx-auto px-4 md:px-8 py-8 flex flex-col min-h-[calc(100vh-4rem)]">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center">
-              <Sparkles className="w-4 h-4 text-accent" />
+              <mode.Icon className="w-4 h-4 text-accent" />
             </div>
             <div>
-              <h1 className="text-xl font-bold leading-none">AI Resource Advisor</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">Powered by Claude</p>
+              <h1 className="text-xl font-bold leading-none">{mode.label}</h1>
+              <p className="text-xs text-muted-foreground mt-0.5">{mode.tagline}</p>
             </div>
           </div>
           {!isEmpty && (
@@ -226,20 +320,35 @@ INSTRUCTIONS:
           )}
         </div>
 
+        {/* Mode tabs */}
+        <div className="flex gap-2 mb-6 border-b border-border pb-4">
+          {MODES.map(m => (
+            <button
+              key={m.id}
+              onClick={() => setActiveMode(m.id)}
+              className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-colors ${
+                activeMode === m.id
+                  ? "bg-accent/15 border border-accent/30 text-accent"
+                  : "text-muted-foreground hover:text-foreground hover:bg-secondary/50 border border-transparent"
+              }`}
+            >
+              <m.Icon className="w-4 h-4" /> {m.label}
+            </button>
+          ))}
+        </div>
+
         {/* Empty state */}
         {isEmpty && (
           <div className="flex-1 flex flex-col items-center justify-center text-center py-12 gap-6">
             <div className="w-16 h-16 rounded-2xl bg-accent/10 border border-accent/20 flex items-center justify-center">
-              <Sparkles className="w-7 h-7 text-accent" />
+              <mode.Icon className="w-7 h-7 text-accent" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-2">What are you building?</h2>
-              <p className="text-muted-foreground text-sm max-w-sm">
-                Describe your startup idea or what you need help with — I'll find the most relevant resources for you.
-              </p>
+              <h2 className="text-2xl font-bold mb-2">{mode.emptyTitle}</h2>
+              <p className="text-muted-foreground text-sm max-w-sm">{mode.emptyDesc}</p>
             </div>
             <div className="grid sm:grid-cols-2 gap-2 w-full max-w-lg">
-              {SUGGESTIONS.map(s => (
+              {mode.suggestions.map(s => (
                 <button
                   key={s}
                   onClick={() => send(s)}
@@ -255,22 +364,17 @@ INSTRUCTIONS:
         {/* Messages */}
         {!isEmpty && (
           <div className="flex-1 space-y-6 mb-6 overflow-y-auto">
-            {messages.map((msg, i) => (
+            {chat.messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "flex-row-reverse" : ""}`}>
-                {/* Avatar */}
                 <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold ${
                   msg.role === "user"
                     ? "bg-gradient-to-br from-primary to-accent text-background"
                     : "bg-accent/15 border border-accent/30 text-accent"
                 }`}>
-                  {msg.role === "user"
-                    ? (user?.name?.charAt(0).toUpperCase() || "U")
-                    : <Bot className="w-4 h-4" />
-                  }
+                  {msg.role === "user" ? (user?.name?.charAt(0).toUpperCase() || "U") : <Bot className="w-4 h-4" />}
                 </div>
 
                 <div className={`flex flex-col gap-3 max-w-[85%] ${msg.role === "user" ? "items-end" : ""}`}>
-                  {/* Bubble */}
                   {msg.loading ? (
                     <div className="bg-card border border-border rounded-2xl rounded-tl-sm px-4 py-3">
                       <div className="flex gap-1.5 items-center h-5">
@@ -289,48 +393,33 @@ INSTRUCTIONS:
                     </div>
                   )}
 
-                  {/* Recommendation cards */}
-                  {msg.recommendations && msg.recommendations.length > 0 && (
+                  {msg.cards && msg.cards.length > 0 && (
                     <div className="w-full space-y-2">
-                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider px-1">Recommended for you</p>
-                      {msg.recommendations.map((r, j) => {
-                        const fullResource = ALL_RESOURCES.find(res => res.id === r.id);
+                      <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider px-1">{mode.cardsHeading}</p>
+                      {msg.cards.map((r, j) => {
+                        const fullResource = mode.linkToResources ? ALL_RESOURCES.find(res => res.id === r.id) : undefined;
                         const isSaved = saved.includes(r.id);
                         return (
-                          <div
-                            key={j}
-                            className="bg-card border border-border rounded-xl p-4 hover:border-accent/40 transition-colors"
-                          >
+                          <div key={j} className="bg-card border border-border rounded-xl p-4 hover:border-accent/40 transition-colors">
                             <div className="flex items-start gap-3">
                               <span className="text-2xl shrink-0">{r.emoji || "📌"}</span>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-start justify-between gap-2 mb-1">
                                   <h4 className="font-semibold text-sm leading-snug">{r.title}</h4>
-                                  <div className="flex items-center gap-1.5 shrink-0">
-                                    {fullResource && (
-                                      <button
-                                        onClick={() => toggle(r.id)}
-                                        aria-label="Save"
-                                        className="p-1 rounded hover:bg-white/10 transition-colors"
-                                      >
+                                  {fullResource && (
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                      <button onClick={() => toggle(r.id)} aria-label="Save" className="p-1 rounded hover:bg-white/10 transition-colors">
                                         <Bookmark className={`w-3.5 h-3.5 ${isSaved ? "fill-accent text-accent" : "text-muted-foreground hover:text-foreground"}`} />
                                       </button>
-                                    )}
-                                    {fullResource && (
-                                      <button
-                                        onClick={() => navigate({ to: "/resource/$id", params: { id: r.id } })}
-                                        className="p-1 rounded hover:bg-white/10 transition-colors"
-                                        aria-label="Open"
-                                      >
+                                      <button onClick={() => navigate({ to: "/resource/$id", params: { id: r.id } })} className="p-1 rounded hover:bg-white/10 transition-colors" aria-label="Open">
                                         <ExternalLink className="w-3.5 h-3.5 text-muted-foreground hover:text-foreground" />
                                       </button>
-                                    )}
-                                  </div>
+                                    </div>
+                                  )}
                                 </div>
 
-                                {/* Category + extra info */}
                                 <div className="flex flex-wrap items-center gap-1.5 mb-2">
-                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catColor[r.category] || catColor["LEARN"]}`}>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md border ${catColor[r.category] || "bg-secondary text-secondary-foreground border-border"}`}>
                                     {r.category?.toUpperCase()}
                                   </span>
                                   {r.amount && <span className="text-[10px] font-semibold text-emerald-400">{r.amount}</span>}
@@ -343,10 +432,7 @@ INSTRUCTIONS:
                                   )}
                                 </div>
 
-                                {/* Why it fits */}
-                                <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-accent/40 pl-2">
-                                  {r.reason}
-                                </p>
+                                <p className="text-xs text-muted-foreground leading-relaxed border-l-2 border-accent/40 pl-2">{r.reason}</p>
                               </div>
                             </div>
                           </div>
@@ -368,10 +454,8 @@ INSTRUCTIONS:
               ref={inputRef}
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); }
-              }}
-              placeholder="Describe your startup idea or what you need…"
+              onKeyDown={e => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(input); } }}
+              placeholder={mode.id === "pitch" ? "Paste or describe your pitch deck…" : "Describe your startup idea or what you need…"}
               rows={1}
               className="w-full bg-transparent px-4 pt-3.5 pb-10 text-sm resize-none outline-none placeholder:text-muted-foreground"
               style={{ minHeight: "52px", maxHeight: "140px" }}

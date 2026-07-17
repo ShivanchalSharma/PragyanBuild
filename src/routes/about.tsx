@@ -7,34 +7,32 @@ export const Route = createFileRoute("/about")({
 
 function AboutPage() {
   return (
-    <PageShell title="About eDC">
+    <PageShell title="About Us">
 
       <p>
-        The Entrepreneurship Development Cell (eDC), IIT Delhi, is one of India's largest
-        student-driven entrepreneurship organizations, dedicated to fostering innovation
-        and nurturing the next generation of founders. Established in 2007, eDC provides
-        aspiring entrepreneurs with the resources, mentorship, industry connections, and
-        opportunities needed to transform ideas into successful ventures.
+        Entrepreneurship is full of opportunities, but finding the right resource,
+        mentor, funding program, or next step often means navigating scattered
+        information across countless platforms. We are building a smarter way forward.
       </p>
 
       <p>
-        Through flagship initiatives such as the Business and Entrepreneurship Conclave
-        (BECon), startup competitions, workshops, speaker sessions, hackathons, and
-        incubation support, eDC creates a vibrant ecosystem where students can learn,
-        build, network, and launch impactful startups.
+        Our platform brings together curated resources, funding opportunities,
+        mentorship, events, and ecosystem connections in one place. Through
+        personalized guidance, it understands where you are in your entrepreneurial
+        journey and surfaces what matters most at that stage.
       </p>
 
       <p>
-        By connecting students with founders, investors, industry leaders, and the broader
-        startup ecosystem, eDC IIT Delhi serves as a gateway for turning entrepreneurial
-        ambitions into reality.
+        Whether you're exploring entrepreneurship, validating an idea, building your
+        first product, or preparing to scale, our goal is simple: help you discover
+        the right opportunities, make better decisions, and keep moving forward.
       </p>
 
       <div className="mt-8 grid sm:grid-cols-3 gap-4">
         {[
-          { stat: "2007", label: "Year founded" },
-          { stat: "India's largest", label: "Student-run entrepreneurship org" },
-          { stat: "500+", label: "Resources curated" },
+          { stat: "500+", label: "Curated resources" },
+          { stat: "Personalized", label: "Guidance for every stage" },
+          { stat: "One Platform", label: "Resources, funding & connections" },
         ].map(({ stat, label }) => (
           <div key={label} className="bg-card border border-border rounded-xl p-5">
             <div className="text-2xl font-bold text-foreground">{stat}</div>

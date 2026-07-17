@@ -17,18 +17,43 @@ function SettingsPage() {
   const { user, setUser } = useUser();
   const { theme, setTheme } = useTheme();
   const navigate = useNavigate();
+  const [hydrated, setHydrated] = useState(false);
   const [name, setName] = useState("");
-  const [year, setYear] = useState("2nd Year");
-  const [branch, setBranch] = useState("");
+  const [email, setEmail] = useState("");
+  const [organization, setOrganization] = useState("");
+  const [pitch, setPitch] = useState("");
+  const [link, setLink] = useState("");
+
+  // wait for useUser() to finish reading localStorage before deciding whether
+  // to redirect — checking `user` on the very first render (before hydration)
+  // always sees null and kicks logged-in users straight back to the landing page.
+  useEffect(() => setHydrated(true), []);
 
   useEffect(() => {
-    if (user) { setName(user.name); setYear(user.year || "2nd Year"); setBranch(user.branch || ""); }
+    if (user) {
+      setName(user.name);
+      setEmail(user.email || "");
+      setOrganization(user.organization || "");
+      setPitch(user.pitch || "");
+      setLink(user.link || "");
+    }
   }, [user]);
 
-  if (typeof window !== "undefined" && !user) return <Navigate to="/" />;
+  if (!hydrated) return null;
+  if (!user) return <Navigate to="/" />;
 
-  const save = () => user && setUser({ ...user, name, year, branch });
-  const del = () => { setUser(null); navigate({ to: "/" }); };
+  const nameValid = name.trim().length > 0;
+  const emailValid = /\S+@\S+\.\S+/.test(email.trim());
+  const canSave = nameValid && emailValid;
+
+  const save = () => {
+    if (!user || !canSave) return;
+    setUser({ ...user, name: name.trim(), email: email.trim(), organization, pitch, link });
+  };
+  const del = () => {
+    setUser(null);
+    navigate({ to: "/" });
+  };
 
   return (
     <AppShell>
@@ -42,43 +67,110 @@ function SettingsPage() {
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile" className="mt-6 space-y-4 bg-card border border-border rounded-xl p-6">
-            <div><Label>Name</Label><Input value={name} onChange={e => setName(e.target.value)} /></div>
-            <div><Label>Year</Label>
-              <select value={year} onChange={e => setYear(e.target.value)} className="w-full h-10 rounded-md bg-background border border-input px-3 text-sm">
-                {["1st Year","2nd Year","3rd Year","4th Year","MTech/PhD","Alumni"].map(y => <option key={y}>{y}</option>)}
-              </select>
+          <TabsContent
+            value="profile"
+            className="mt-6 space-y-4 bg-card border border-border rounded-xl p-6"
+          >
+            <div>
+              <Label>Name <span className="text-destructive">*</span></Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} />
+              {!nameValid && <p className="text-xs text-destructive mt-1">Name is required.</p>}
             </div>
-            <div><Label>Branch</Label><Input value={branch} onChange={e => setBranch(e.target.value)} placeholder="e.g. Computer Science" /></div>
+            <div>
+              <Label>Email <span className="text-destructive">*</span></Label>
+              <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
+              {!emailValid && <p className="text-xs text-destructive mt-1">Enter a valid email address.</p>}
+            </div>
+            <div>
+              <Label>College / School / Organization</Label>
+              <Input
+                value={organization}
+                onChange={(e) => setOrganization(e.target.value)}
+                placeholder="Have a startup but no organization yet? Leave this empty."
+              />
+            </div>
+            <div>
+              <Label>What are you building? <span className="text-muted-foreground font-normal">(one-liner)</span></Label>
+              <Input
+                value={pitch}
+                onChange={(e) => setPitch(e.target.value)}
+                placeholder="e.g. AI-powered inventory tool for D2C brands"
+              />
+              <p className="text-xs text-muted-foreground mt-1">Shown to mentors when you request a session, and used to personalize your dashboard.</p>
+            </div>
+            <div>
+              <Label>LinkedIn / Portfolio</Label>
+              <Input
+                value={link}
+                onChange={(e) => setLink(e.target.value)}
+                placeholder="https://..."
+              />
+              <p className="text-xs text-muted-foreground mt-1">Included with mentor session requests so they know who's reaching out.</p>
+            </div>
             <div className="flex items-center justify-between pt-2">
               <div>
                 <p className="font-medium text-sm">Light mode</p>
                 <p className="text-xs text-muted-foreground">Switch to a brighter theme.</p>
               </div>
-              <Switch checked={theme === "light"} onCheckedChange={(v) => setTheme(v ? "light" : "dark")} />
+              <Switch
+                checked={theme === "light"}
+                onCheckedChange={(v) => setTheme(v ? "light" : "dark")}
+              />
             </div>
-            <Button onClick={save} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">Save changes</Button>
+            <Button
+              onClick={save}
+              disabled={!canSave}
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+            >
+              Save changes
+            </Button>
           </TabsContent>
 
-          <TabsContent value="prefs" className="mt-6 bg-card border border-border rounded-xl p-6 space-y-4">
-            <p className="text-sm text-muted-foreground">Update what we recommend by re-taking the onboarding quiz.</p>
-            <Button onClick={() => navigate({ to: "/onboarding" })} variant="outline">Re-take quiz</Button>
+          <TabsContent
+            value="prefs"
+            className="mt-6 bg-card border border-border rounded-xl p-6 space-y-4"
+          >
+            <p className="text-sm text-muted-foreground">
+              Update what we recommend by re-taking the onboarding quiz.
+            </p>
+            <Button onClick={() => navigate({ to: "/onboarding" })} variant="outline">
+              Re-take quiz
+            </Button>
           </TabsContent>
 
-          <TabsContent value="notif" className="mt-6 bg-card border border-border rounded-xl p-6 space-y-4">
-            <Toggle label="Weekly digest email" desc="Curated funding and event roundup every Monday." />
+          <TabsContent
+            value="notif"
+            className="mt-6 bg-card border border-border rounded-xl p-6 space-y-4"
+          >
+            <Toggle
+              label="Weekly digest email"
+              desc="Curated funding and event roundup every Monday."
+            />
             <Toggle label="Deadline alerts" desc="Get pinged 48 hours before deadlines." />
             <Toggle label="New resources" desc="Notify me when new resources match my interests." />
           </TabsContent>
 
-          <TabsContent value="account" className="mt-6 bg-card border border-border rounded-xl p-6 space-y-4">
-            <div><Label>Current password</Label><Input type="password" /></div>
-            <div><Label>New password</Label><Input type="password" /></div>
+          <TabsContent
+            value="account"
+            className="mt-6 bg-card border border-border rounded-xl p-6 space-y-4"
+          >
+            <div>
+              <Label>Current password</Label>
+              <Input type="password" />
+            </div>
+            <div>
+              <Label>New password</Label>
+              <Input type="password" />
+            </div>
             <Button variant="outline">Update password</Button>
             <div className="pt-4 border-t border-border">
               <p className="font-semibold text-destructive">Delete account</p>
-              <p className="text-xs text-muted-foreground mb-3">This is permanent and cannot be undone.</p>
-              <Button variant="destructive" onClick={del}>Delete account</Button>
+              <p className="text-xs text-muted-foreground mb-3">
+                This is permanent and cannot be undone.
+              </p>
+              <Button variant="destructive" onClick={del}>
+                Delete account
+              </Button>
             </div>
           </TabsContent>
         </Tabs>

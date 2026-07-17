@@ -12,12 +12,18 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TrackerRouteImport } from './routes/tracker'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as SavedRouteImport } from './routes/saved'
+import { Route as RaiseRouteImport } from './routes/raise'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as OnboardingRouteImport } from './routes/onboarding'
 import { Route as NotificationsRouteImport } from './routes/notifications'
+import { Route as MentorsRouteImport } from './routes/mentors'
+import { Route as FeedbackRouteImport } from './routes/feedback'
+import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CookiesRouteImport } from './routes/cookies'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as BuildRouteImport } from './routes/build'
+import { Route as BharatRouteImport } from './routes/bharat'
 import { Route as AiRouteImport } from './routes/ai'
 import { Route as AboutRouteImport } from './routes/about'
 import { Route as StartupTimelineRouteImport } from './routes/StartupTimeline'
@@ -39,6 +45,11 @@ const SavedRoute = SavedRouteImport.update({
   path: '/saved',
   getParentRoute: () => rootRouteImport,
 } as any)
+const RaiseRoute = RaiseRouteImport.update({
+  id: '/raise',
+  path: '/raise',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -54,6 +65,21 @@ const NotificationsRoute = NotificationsRouteImport.update({
   path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MentorsRoute = MentorsRouteImport.update({
+  id: '/mentors',
+  path: '/mentors',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FeedbackRoute = FeedbackRouteImport.update({
+  id: '/feedback',
+  path: '/feedback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DiscoverRoute = DiscoverRouteImport.update({
+  id: '/discover',
+  path: '/discover',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const DashboardRoute = DashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -67,6 +93,16 @@ const CookiesRoute = CookiesRouteImport.update({
 const ContactRoute = ContactRouteImport.update({
   id: '/contact',
   path: '/contact',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BuildRoute = BuildRouteImport.update({
+  id: '/build',
+  path: '/build',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BharatRoute = BharatRouteImport.update({
+  id: '/bharat',
+  path: '/bharat',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AiRoute = AiRouteImport.update({
@@ -101,12 +137,18 @@ export interface FileRoutesByFullPath {
   '/StartupTimeline': typeof StartupTimelineRoute
   '/about': typeof AboutRoute
   '/ai': typeof AiRoute
+  '/bharat': typeof BharatRoute
+  '/build': typeof BuildRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
+  '/discover': typeof DiscoverRoute
+  '/feedback': typeof FeedbackRoute
+  '/mentors': typeof MentorsRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
+  '/raise': typeof RaiseRoute
   '/saved': typeof SavedRoute
   '/settings': typeof SettingsRoute
   '/tracker': typeof TrackerRoute
@@ -117,12 +159,18 @@ export interface FileRoutesByTo {
   '/StartupTimeline': typeof StartupTimelineRoute
   '/about': typeof AboutRoute
   '/ai': typeof AiRoute
+  '/bharat': typeof BharatRoute
+  '/build': typeof BuildRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
+  '/discover': typeof DiscoverRoute
+  '/feedback': typeof FeedbackRoute
+  '/mentors': typeof MentorsRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
+  '/raise': typeof RaiseRoute
   '/saved': typeof SavedRoute
   '/settings': typeof SettingsRoute
   '/tracker': typeof TrackerRoute
@@ -134,12 +182,18 @@ export interface FileRoutesById {
   '/StartupTimeline': typeof StartupTimelineRoute
   '/about': typeof AboutRoute
   '/ai': typeof AiRoute
+  '/bharat': typeof BharatRoute
+  '/build': typeof BuildRoute
   '/contact': typeof ContactRoute
   '/cookies': typeof CookiesRoute
   '/dashboard': typeof DashboardRoute
+  '/discover': typeof DiscoverRoute
+  '/feedback': typeof FeedbackRoute
+  '/mentors': typeof MentorsRoute
   '/notifications': typeof NotificationsRoute
   '/onboarding': typeof OnboardingRoute
   '/privacy': typeof PrivacyRoute
+  '/raise': typeof RaiseRoute
   '/saved': typeof SavedRoute
   '/settings': typeof SettingsRoute
   '/tracker': typeof TrackerRoute
@@ -152,12 +206,18 @@ export interface FileRouteTypes {
     | '/StartupTimeline'
     | '/about'
     | '/ai'
+    | '/bharat'
+    | '/build'
     | '/contact'
     | '/cookies'
     | '/dashboard'
+    | '/discover'
+    | '/feedback'
+    | '/mentors'
     | '/notifications'
     | '/onboarding'
     | '/privacy'
+    | '/raise'
     | '/saved'
     | '/settings'
     | '/tracker'
@@ -168,12 +228,18 @@ export interface FileRouteTypes {
     | '/StartupTimeline'
     | '/about'
     | '/ai'
+    | '/bharat'
+    | '/build'
     | '/contact'
     | '/cookies'
     | '/dashboard'
+    | '/discover'
+    | '/feedback'
+    | '/mentors'
     | '/notifications'
     | '/onboarding'
     | '/privacy'
+    | '/raise'
     | '/saved'
     | '/settings'
     | '/tracker'
@@ -184,12 +250,18 @@ export interface FileRouteTypes {
     | '/StartupTimeline'
     | '/about'
     | '/ai'
+    | '/bharat'
+    | '/build'
     | '/contact'
     | '/cookies'
     | '/dashboard'
+    | '/discover'
+    | '/feedback'
+    | '/mentors'
     | '/notifications'
     | '/onboarding'
     | '/privacy'
+    | '/raise'
     | '/saved'
     | '/settings'
     | '/tracker'
@@ -201,12 +273,18 @@ export interface RootRouteChildren {
   StartupTimelineRoute: typeof StartupTimelineRoute
   AboutRoute: typeof AboutRoute
   AiRoute: typeof AiRoute
+  BharatRoute: typeof BharatRoute
+  BuildRoute: typeof BuildRoute
   ContactRoute: typeof ContactRoute
   CookiesRoute: typeof CookiesRoute
   DashboardRoute: typeof DashboardRoute
+  DiscoverRoute: typeof DiscoverRoute
+  FeedbackRoute: typeof FeedbackRoute
+  MentorsRoute: typeof MentorsRoute
   NotificationsRoute: typeof NotificationsRoute
   OnboardingRoute: typeof OnboardingRoute
   PrivacyRoute: typeof PrivacyRoute
+  RaiseRoute: typeof RaiseRoute
   SavedRoute: typeof SavedRoute
   SettingsRoute: typeof SettingsRoute
   TrackerRoute: typeof TrackerRoute
@@ -235,6 +313,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SavedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/raise': {
+      id: '/raise'
+      path: '/raise'
+      fullPath: '/raise'
+      preLoaderRoute: typeof RaiseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -256,6 +341,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/mentors': {
+      id: '/mentors'
+      path: '/mentors'
+      fullPath: '/mentors'
+      preLoaderRoute: typeof MentorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/feedback': {
+      id: '/feedback'
+      path: '/feedback'
+      fullPath: '/feedback'
+      preLoaderRoute: typeof FeedbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/discover': {
+      id: '/discover'
+      path: '/discover'
+      fullPath: '/discover'
+      preLoaderRoute: typeof DiscoverRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/dashboard': {
       id: '/dashboard'
       path: '/dashboard'
@@ -275,6 +381,20 @@ declare module '@tanstack/react-router' {
       path: '/contact'
       fullPath: '/contact'
       preLoaderRoute: typeof ContactRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/build': {
+      id: '/build'
+      path: '/build'
+      fullPath: '/build'
+      preLoaderRoute: typeof BuildRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bharat': {
+      id: '/bharat'
+      path: '/bharat'
+      fullPath: '/bharat'
+      preLoaderRoute: typeof BharatRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ai': {
@@ -321,12 +441,18 @@ const rootRouteChildren: RootRouteChildren = {
   StartupTimelineRoute: StartupTimelineRoute,
   AboutRoute: AboutRoute,
   AiRoute: AiRoute,
+  BharatRoute: BharatRoute,
+  BuildRoute: BuildRoute,
   ContactRoute: ContactRoute,
   CookiesRoute: CookiesRoute,
   DashboardRoute: DashboardRoute,
+  DiscoverRoute: DiscoverRoute,
+  FeedbackRoute: FeedbackRoute,
+  MentorsRoute: MentorsRoute,
   NotificationsRoute: NotificationsRoute,
   OnboardingRoute: OnboardingRoute,
   PrivacyRoute: PrivacyRoute,
+  RaiseRoute: RaiseRoute,
   SavedRoute: SavedRoute,
   SettingsRoute: SettingsRoute,
   TrackerRoute: TrackerRoute,

@@ -37,7 +37,7 @@ export function LatestBlogs() {
     <section className="max-w-6xl mx-auto px-6 py-16">
       <div className="flex items-center justify-between mb-8">
         <h2 className="text-sm font-bold tracking-widest text-foreground uppercase">
-          Latest from eDC
+          The Entrepreneur’s Journal
         </h2>
         <a
           href="https://edciitdelhi.substack.com"

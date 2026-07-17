@@ -62,6 +62,12 @@ export const facilities = [
   { id: "f3", title: "R&D Partnerships", desc: "Industry collaboration desk", emoji: "🔬" },
 ];
 
+export const connects = [
+  { id: "conn1", title: "i-TTO", desc: "Tech Transfer Office", emoji: "🏛️" },
+  { id: "conn2", title: "R&D Partnerships", desc: "Industry collaboration", emoji: "🔬" },
+  { id: "conn3", title: "Makerspace", desc: "Hardware lab", emoji: "🏭" },
+];
+
 export const funders = [
   { id: "fu1", title: "IHFC", amount: "₹25L–2Cr", stage: "Pre-seed/Seed", deadline: "Aug 2025", emoji: "🏦" },
   { id: "fu2", title: "IDEX", amount: "₹1.5Cr", stage: "Prototype", deadline: "Rolling", emoji: "🛡️" },

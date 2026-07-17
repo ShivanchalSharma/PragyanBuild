@@ -9,7 +9,7 @@ export function NewsAndEvents() {
         {/* NEWS & UPDATES */}
         <div>
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-sm font-bold tracking-widest text-foreground uppercase">News & Updates</h2>
+            <h2 className="text-sm font-bold tracking-widest text-foreground uppercase">ECOSYSTEM UPDATES</h2>
             <a href="/updates" className="flex items-center gap-1 text-xs font-semibold text-accent hover:opacity-80 transition-opacity uppercase tracking-wider">
               View All <ArrowRight className="w-3 h-3" />
             </a>

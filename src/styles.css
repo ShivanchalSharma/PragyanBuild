@@ -176,3 +176,18 @@
 ::-webkit-scrollbar { height: 8px; width: 8px; }
 ::-webkit-scrollbar-thumb { background: oklch(1 0 0 / 0.12); border-radius: 8px; }
 ::-webkit-scrollbar-thumb:hover { background: oklch(1 0 0 / 0.2); }
+
+
+/* ============================================================
+   APPEND this to your existing src/styles.css
+   (anywhere after the other @keyframes blocks)
+   ============================================================ */
+
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-16px); }
+}
+
+.animate-float-slow {
+  animation: float-slow 9s ease-in-out infinite;
+}

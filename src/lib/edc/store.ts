@@ -5,6 +5,9 @@ export interface UserProfile {
   email: string;
   year?: string;
   branch?: string;
+  link?: string;         // LinkedIn / portfolio — shown to mentors on booking requests
+  pitch?: string;        // one-line "what are you building" — shown to mentors, used for personalization
+  organization?: string; // college / school / company — general enough for any founder
 }
 
 export interface Preferences {

@@ -1,6 +1,10 @@
+import { useState } from "react";
 import { Link } from "@tanstack/react-router";
 import { Logo } from "@/components/edc/Logo";
-import { Linkedin, Instagram } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { AuthDialog } from "@/components/edc/AuthDialog";
+import { FooterTagline } from "@/components/edc/FooterTagline";
+import { Home, Info, Mail, ShieldCheck, Cookie } from "lucide-react";
 
 interface PageShellProps {
   title: string;
@@ -8,17 +12,26 @@ interface PageShellProps {
 }
 
 export function PageShell({ title, children }: PageShellProps) {
+  const [authOpen, setAuthOpen] = useState(false);
+  const [mode, setMode] = useState<"signup" | "signin">("signup");
+  const open = (m: "signup" | "signin") => { setMode(m); setAuthOpen(true); };
+
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
 
+      {/* Header — same Sign In / Get Started as the hero */}
       <header className="sticky top-0 z-40 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link to="/"><Logo /></Link>
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-muted-foreground">
-            <a href="/#learn"   className="hover:text-foreground transition-colors">LEARN</a>
-            <a href="/#startup" className="hover:text-foreground transition-colors">STARTUP</a>
-            <a href="/#raise"   className="hover:text-foreground transition-colors">RAISE</a>
-          </nav>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" onClick={() => open("signin")}>Sign In</Button>
+            <Button
+              className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold"
+              onClick={() => open("signup")}
+            >
+              Get Started
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -29,28 +42,26 @@ export function PageShell({ title, children }: PageShellProps) {
         </div>
       </main>
 
+      {/* Footer — Quick Access layout, matching the landing page */}
       <footer className="border-t border-border">
-        <div className="max-w-7xl mx-auto px-6 py-10 flex flex-col md:flex-row items-center justify-between gap-6 text-sm text-muted-foreground">
-          <div className="flex items-center gap-6">
-            <Link to="/about"   className="hover:text-foreground transition-colors">About eDC</Link>
-            <Link to="/contact" className="hover:text-foreground transition-colors">Contact</Link>
-            <Link to="/privacy" className="hover:text-foreground transition-colors">Privacy Policy</Link>
-            <Link to="/cookies" className="hover:text-foreground transition-colors">Cookie Policy</Link>
-          </div>
-        <div className="flex items-center gap-4">
-         <a href="https://in.linkedin.com/company/edc-iit-delhi" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
-         <Linkedin className="w-8 h-8" />
-         </a>
-         <a href="https://www.instagram.com/edc_iitd/?hl=en" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
-        <Instagram className="w-6 h-6" />
-         </a>
+        <div className="max-w-7xl mx-auto px-6 py-12">
+          <h3 className="text-sm font-bold tracking-widest text-foreground uppercase mb-5">
+            Quick Access
+          </h3>
+          <nav className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-x-6 gap-y-3 text-sm text-muted-foreground">
+            <Link to="/" className="inline-flex items-center gap-2 hover:text-foreground transition-colors">
+              <Home className="w-4 h-4" /> Home
+            </Link>
+            <Link to="/about" className="inline-flex items-center gap-2 hover:text-foreground transition-colors"><Info className="w-4 h-4" /> About PragyanBuild</Link>
+            <Link to="/contact" className="inline-flex items-center gap-2 hover:text-foreground transition-colors"><Mail className="w-4 h-4" /> Contact</Link>
+            <Link to="/privacy" className="inline-flex items-center gap-2 hover:text-foreground transition-colors"><ShieldCheck className="w-4 h-4" /> Privacy Policy</Link>
+            <Link to="/cookies" className="inline-flex items-center gap-2 hover:text-foreground transition-colors"><Cookie className="w-4 h-4" /> Cookie Policy</Link>
+          </nav>
         </div>
-        </div>
-        <p className="text-center text-xs text-muted-foreground pb-6">
-          Made with <span className="text-accent">♥</span> by eDC IIT Delhi Tech Vertical
-        </p>
+        <FooterTagline />
       </footer>
 
+      <AuthDialog open={authOpen} onOpenChange={setAuthOpen} mode={mode} onSwitchMode={setMode} />
     </div>
   );
 }

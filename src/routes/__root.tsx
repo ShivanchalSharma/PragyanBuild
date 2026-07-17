@@ -81,7 +81,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "description", content: "The entrepreneurship resource hub for IIT Delhi students. Personalized resources, funding alerts, and mentorship." },
       { name: "author", content: "eDC IIT Delhi" },
       { property: "og:title", content: "eDC KnowledgeHub — IIT Delhi" },
-      { property: "og:description", content: "Personalized resources, funding alerts, and mentorship — built for IIT Delhi students." },
+      { property: "og:description", content: "From your first idea to your next big milestone — get the right resources, funding, and guidance at every stage." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
       { name: "twitter:site", content: "@Lovable" },
